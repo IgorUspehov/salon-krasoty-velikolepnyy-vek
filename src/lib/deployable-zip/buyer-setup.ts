@@ -1,10 +1,10 @@
-import fs from "fs";
-import path from "path";
-
 import {
   firebaseConfigured,
   readManifestFromFirestore,
 } from "@/lib/manifest/firestore-sync";
+
+/** Bundled at build time — Deployable ZIP overwrites root file before buyer `next build`. */
+import packagedManifest from "../../../client-manifest.json";
 
 export type BuyerFirebaseSetupState = {
   nicheLabel: string;
@@ -25,20 +25,16 @@ function formatNicheLabel(raw: string): string {
 
 /** Root `client-manifest.json` shipped only in the €999 Deployable ZIP. */
 export function readRootClientManifest(): Record<string, unknown> | null {
-  const filePath = path.join(process.cwd(), "client-manifest.json");
-  if (!fs.existsSync(filePath)) {
+  const parsed = packagedManifest as unknown;
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return null;
   }
-
-  try {
-    const parsed = JSON.parse(fs.readFileSync(filePath, "utf8")) as unknown;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return null;
-    }
-    return parsed as Record<string, unknown>;
-  } catch {
+  const record = parsed as Record<string, unknown>;
+  // SaaS stub is `{}` — treat as absent so marketing home stays unchanged.
+  if (Object.keys(record).length === 0) {
     return null;
   }
+  return record;
 }
 
 function resolveNicheLabel(manifest: Record<string, unknown>): string {

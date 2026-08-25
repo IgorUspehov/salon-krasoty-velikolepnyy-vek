@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { BuyerFirebaseSetupStub } from "@/components/buyer-firebase-setup-stub";
 import { SaasHomeLanding } from "@/components/saas-home-landing";
 import { resolveBuyerFirebaseSetup } from "@/lib/deployable-zip/buyer-setup";
+
+import manifest from "../../client-manifest.json";
 
 export async function generateMetadata(): Promise<Metadata> {
   const setup = await resolveBuyerFirebaseSetup();
@@ -29,6 +32,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function Page() {
+  const clientId =
+    typeof (manifest as { clientId?: unknown }).clientId === "string"
+      ? (manifest as { clientId: string }).clientId.trim()
+      : "";
+  if (clientId) {
+    redirect(`/site/${clientId}`);
+  }
+
   const setup = await resolveBuyerFirebaseSetup();
   if (setup) {
     return <BuyerFirebaseSetupStub nicheLabel={setup.nicheLabel} />;
